@@ -4,49 +4,66 @@ import (
 	"fmt"
 )
 
-const USD_EUR = 0.89460
-const USD_RUB = 91.63180
+type currencyMap = map [string]float64
 
 var sorcesCurr string
 var destinationCurr string
 var sumConv float64
 
 func main() {
-	
+
+	mCurre := make(currencyMap, 3)
+		
 	fmt.Println("### Конвертер валюты ###")
 	
-	avalCurr := availableCurrencies(0)	
-	inputData(0, fmt.Sprintf("Введите исходную валюту (%s):", avalCurr))
+	for {
 
-	inputData(2, "Введите сумму")
-
-	avalCurr = availableCurrencies(1)
-	inputData(1, fmt.Sprintf("Введите валюту назначения (%s):", avalCurr))
-
-	result := convert(sorcesCurr, destinationCurr, sumConv)
-
-	fmt.Printf("Результат - %f %s = %f %s", sumConv, sorcesCurr, result, destinationCurr)
+		sorcesCurr = ""
+		destinationCurr = ""		
+		
+		mCurre["USD"] = 100
+		mCurre["EUR"] = 120
+		mCurre["RUB"] = 1
 			
+		avalCurr := availableCurrencies(&mCurre)	
+		inputData(0, fmt.Sprintf("Введите исходную валюту (%s):", avalCurr), &mCurre)
+
+		inputData(2, "Введите сумму", &mCurre)
+
+		avalCurr = availableCurrencies(&mCurre)
+		inputData(1, fmt.Sprintf("Введите валюту назначения (%s):", avalCurr), &mCurre)
+
+		result := convert(sorcesCurr, destinationCurr, sumConv, &mCurre)
+
+		fmt.Printf("Результат - %f %s = %f %s \n", sumConv, sorcesCurr, result, destinationCurr)
+
+		fmt.Print("Продолжить? (y/n) ")
+		ans := "" 
+		fmt.Scan(&ans)
+		if ans == "n" {
+			break
+		}
+	}	
 }
 
-func inputData(mode int, messageText string) {
+func inputData(mode int, messageText string, mCurr *currencyMap) {
 
 	fmt.Println(messageText)
 	switch mode {
 	case 0:
-		for{
+		for {
 			fmt.Scanln(&sorcesCurr)
-			if checkInputData(mode, sorcesCurr) {
+			if checkInputData(sorcesCurr, *mCurr) {
 				break
 			}
-		}		
+		}			
 	case 1:
 		for {
 			fmt.Scanln(&destinationCurr)
-			if checkInputData(mode, destinationCurr) {
+			if checkInputData(destinationCurr, *mCurr) {
 				break
 			}
-		}		
+		}	
 	case 2:
 		for {			
 			if _, err := fmt.Scanln(&sumConv); err == nil{
@@ -61,100 +78,55 @@ func inputData(mode int, messageText string) {
 	
 }
 
-func checkInputData(mode int, currency string) bool{
+func checkInputData(currency string, mCurr currencyMap) bool{
 
-	if mode == 0 {
-		switch currency {
-		case "RUB":
-			return true
-		case "USD":
-			return true
-		case "EUR":
-			return true
-		default:
-			fmt.Println("Не верно указана валюта")
-			avalCurr := availableCurrencies(0)
-			fmt.Printf("Доступно: %s\n", avalCurr)
-			return false
-		}
-	} else if mode == 1 && sorcesCurr == "EUR" {
-		switch currency {
-		case "USD":
-			return true
-		case "RUB":
-			return true
-		default:
-			fmt.Println("Не верно указана валюта")
-			avalCurr := availableCurrencies(1)
-			fmt.Printf("Доступно: %s\n", avalCurr)
-			return false
-		}
-	} else if mode == 1 && sorcesCurr == "USD" {
-		switch currency {
-		case "EUR":
-			return true
-		case "RUB":
-			return true
-		default:
-			fmt.Println("Не верно указана валюта")
-			avalCurr := availableCurrencies(1)
-			fmt.Printf("Доступно: %s\n", avalCurr)
-			return false
-		}
-	} else if mode == 1 && sorcesCurr == "RUB"{
-		switch currency {
-		case "USD":
-			return true
-		case "EUR":
-			return true
-		default:
-			fmt.Println("Не верно указана валюта")
-			avalCurr := availableCurrencies(1)
-			fmt.Printf("Доступно: %s\n", avalCurr)
-			return false
-		}
+	_, found := mCurr[currency]
+	if found && sorcesCurr != destinationCurr {
+		return true
 	}
+		
+	fmt.Println("Не верно указана валюта")
+	avalCurr := availableCurrencies(&mCurr)
+	fmt.Printf("Доступно: %s\n", avalCurr)
 
 	return false
 	
 }
 
-func availableCurrencies(mode int) string{
+func availableCurrencies(mapC *currencyMap) string{
 	
-	switch{
-	case mode == 0:
-		return "RUB/USD/EUR"
-	case mode == 1 && sorcesCurr == "USD":
-		return "RUB/EUR"
-	case mode == 1 && sorcesCurr == "EUR":
-		return "RUB/USD"
-	case mode == 1 && sorcesCurr == "RUB":
-		return "USD/EUR"
-	default:
-		return ""	
-	}
+	avCurr := ""
+
+	for k, _ := range *mapC{
+		if k == sorcesCurr {
+			continue
+		}
+		avCurr = avCurr + k + "/"
+	}  
+
+	return avCurr
 
 }
 
-func convert(firstVal string, secVal string, sum float64) float64 {
+func convert(firstVal string, secVal string, sum float64, calcMap *currencyMap) float64 {
 
 	var result float64
 
-	eurToRub := USD_RUB / USD_EUR
+	cm := *calcMap
 
 	switch {
 	case firstVal == "USD" && secVal == "RUB":
-		result = sum * USD_RUB		
+		result = sum * cm[firstVal]
 	case firstVal == "RUB" && secVal == "USD":
-		result = sum / USD_RUB
+		result = sum / cm[secVal]
 	case firstVal == "USD" && secVal == "EUR":
-		result = sum * USD_EUR
+		result = sum * cm[firstVal] / cm[secVal]
 	case firstVal == "EUR" && secVal == "USD":
-		result = sum / USD_EUR
+		result = sum / cm[secVal] * cm[firstVal]
 	case firstVal == "EUR" && secVal == "RUB":
-		result = sum * eurToRub
+		result = sum * cm[firstVal]
 	case firstVal == "RUB" && secVal == "EUR":
-		result = sum / eurToRub
+		result = sum / cm[secVal]
 	default:
 		result = 0.0
 	}
