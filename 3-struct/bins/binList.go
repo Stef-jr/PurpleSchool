@@ -1,28 +1,35 @@
 package bins
 
 import (
-	"bins/files"
-	"bins/storage"
 	"encoding/json"
 	"fmt"
 	"time"
 )
 
-type BinList struct{
-	
-	Bins []Bin `json:"bins"`
+type Db interface {
+	Read() ([]byte, error)
+	Write([]byte) error
+}
+type BinList struct {
+	Bins      []Bin     `json:"bins"`
 	CreatedAt time.Time `json:"createdAt"`
-	
 }
 
-func NewBins() *BinList {
-	
-	file, err := files.ReadFile("data.json")
+type BinListDb struct {
+	BinList
+	db Db
+}
+
+func NewBinList(db Db) *BinListDb {
+
+	file, err := db.Read()
 
 	if err != nil {
-		return &BinList{
-			Bins: []Bin{},
-			CreatedAt: time.Now(),
+		return &BinListDb{
+			BinList: BinList{
+				Bins:      []Bin{},
+				CreatedAt: time.Now()},
+			db: db,
 		}
 	}
 
@@ -32,25 +39,30 @@ func NewBins() *BinList {
 		fmt.Println(err)
 	}
 
-	return &binList
+	return &BinListDb{
+		BinList: binList,
+		db:      db,
+	}
 }
 
-func (binList *BinList) AddBin(bin Bin) {
+func (binList *BinListDb) AddBin(bin Bin) {
 
 	binList.Bins = append(binList.Bins, bin)
-	//binList.CreatedAt = time.Now()
 	binList.saveBinList()
-	
+
 }
 
-func (binList *BinList) saveBinList() {
+func (binList *BinListDb) saveBinList() {
+
 	binList.CreatedAt = time.Now()
 	data, err := json.Marshal(binList)
 	if err != nil {
-		fmt.Println("ошибка преобразования json")
-	}	
-	err = storage.WriteBins(data, "data.json")
-	if err != nil {
-		fmt.Println("ошибка записи")
+		fmt.Println("Ошибка преобразования json \n" + err.Error())
 	}
+
+	err = binList.db.Write(data)
+	if err != nil {
+		fmt.Println("Ошибка записи данных \n" + err.Error())
+	}
+
 }
