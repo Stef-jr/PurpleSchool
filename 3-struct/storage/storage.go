@@ -1,29 +1,21 @@
 package storage
 
-import "bins/files"
+type Storage struct {
+	path string
+}
 
-//реализовать сохранение bin в виде json в локальном файле
-//реализовать чтение списка bin в виде json из локального файла
-
-func WriteBins(content []byte, name string ) error {
-	
-	err := files.WriteFile(content, name)
-
-	if err != nil {
-		return err
+func NewStorage(path string) *Storage {
+	return &Storage{
+		path: path,
 	}
+}
 
+func Write(content []byte) error {
 	return nil
 }
 
-func ReadBins(path string) ([]byte, error) {
-	
-	data, err := files.ReadFile(path)
+func Read() ([]byte, error) {
 
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return []byte{}, nil
 
 }
-

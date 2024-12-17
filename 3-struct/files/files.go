@@ -7,41 +7,45 @@ import (
 	"strings"
 )
 
-//реализовать чтение любого файла
-//реализовать проверку что это json расширение файла
+type JsonDb struct {
+	fileName string
+}
 
-func ReadFile(path string) ([]byte, error){
+func NewJsonDb(name string) *JsonDb {
+	return &JsonDb{
+		fileName: name,
+	}
+}
 
-	if !verifyExtension(path) {
-		err := errors.New("file format is not 'json'")		
+func (db JsonDb) Read() ([]byte, error) {
+
+	if !verifyExist(db.fileName) {
+		err := errors.New("file not exist")
 		return nil, err
 	}
 
-	data, err := os.ReadFile(path)
-	
+	if !verifyExtension(db.fileName) {
+		err := errors.New("file format is not 'json'")
+		return nil, err
+	}
+
+	data, err := os.ReadFile(db.fileName)
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return data, nil
 }
 
-func verifyExtension (path string) bool{
-	fileExtens := filepath.Ext(path)
-	if strings.TrimLeft(fileExtens, ".") != "json"{
-		return false
-	}
-	return true
-}
+func (db JsonDb) Write(content []byte) error {
+	file, err := os.Create(db.fileName)
 
-func WriteFile(content []byte, name string) error {
-	file, err := os.Create(name)
-	
 	if err != nil {
 		return err
 	}
 
-	defer file.Close()	
+	defer file.Close()
 
 	_, err = file.Write(content)
 	if err != nil {
@@ -49,4 +53,18 @@ func WriteFile(content []byte, name string) error {
 	}
 
 	return nil
+}
+
+func verifyExtension(path string) bool {
+	fileExtens := filepath.Ext(path)
+	return strings.TrimLeft(fileExtens, ".") == "json"
+}
+
+func verifyExist(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
